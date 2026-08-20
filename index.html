@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BeautifulSoup4 教學｜從基礎到進階</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #1b2029;
+      --line: #2a3140;
+      --text: #e6e9ef;
+      --muted: #9aa4b2;
+      --accent: #4ade80;
+      --accent-2: #38bdf8;
+      --accent-3: #fbbf24;
+      --pink: #f472b6;
+      --code-bg: #0d1117;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif; line-height: 1.75; }
+    ::selection { background: rgba(74, 222, 128, .3); }
+
+    /* 頂部導覽 */
+    .topbar { position: sticky; top: 0; z-index: 100; background: rgba(15, 17, 21, .88); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+    .topbar-inner { max-width: 1200px; margin: auto; padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .logo { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: 17px; }
+    .logo-mark { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #0f1115; font-size: 18px; font-weight: 900; }
+    .topbar nav { display: flex; gap: 4px; flex-wrap: wrap; }
+    .topbar nav a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 8px; transition: .2s; }
+    .topbar nav a:hover { color: var(--text); background: var(--card); }
+
+    /* 主視覺 */
+    .hero { max-width: 1200px; margin: auto; padding: 66px 24px 46px; text-align: center; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--card); padding: 7px 16px; border-radius: 99px; font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+    .badge b { color: var(--accent); }
+    .hero h1 { font-size: clamp(34px, 6vw, 60px); margin: 0 0 16px; letter-spacing: -.03em; line-height: 1.15; }
+    .hero h1 span { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero p { color: var(--muted); max-width: 660px; margin: 0 auto 28px; font-size: 16px; }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 700; text-decoration: none; transition: .2s; border: 1px solid transparent; }
+    .btn-primary { background: var(--accent); color: #0f1115; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(74, 222, 128, .25); }
+    .btn-ghost { border-color: var(--line); color: var(--text); background: var(--card); }
+    .btn-ghost:hover { border-color: var(--accent-2); color: var(--accent-2); }
+
+    /* 統計 */
+    .stats { max-width: 1200px; margin: 0 auto 56px; padding: 0 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; text-align: center; }
+    .stat b { display: block; font-size: 28px; color: var(--accent); }
+    .stat span { font-size: 13px; color: var(--muted); }
+
+    /* 版面 */
+    .layout { max-width: 1200px; margin: auto; padding: 0 24px 90px; display: grid; grid-template-columns: 250px 1fr; gap: 34px; align-items: start; }
+    .sidebar { position: sticky; top: 84px; }
+    .sidebar .group-label { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: var(--muted); padding: 14px 12px 6px; text-transform: uppercase; }
+    .sidebar ul { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .sidebar a { display: block; color: var(--muted); text-decoration: none; font-size: 13.5px; padding: 8px 12px; border-radius: 8px; border-left: 2px solid transparent; transition: .15s; }
+    .sidebar a:hover { color: var(--text); background: var(--card); }
+    .sidebar a.active { color: var(--accent); border-left-color: var(--accent); background: rgba(74, 222, 128, .07); }
+
+    .content { min-width: 0; }
+    section { margin-bottom: 60px; scroll-margin-top: 84px; }
+    .section-title { display: flex; align-items: center; gap: 14px; margin: 0 0 8px; font-size: 27px; letter-spacing: -.02em; }
+    .section-title .num { width: 40px; height: 40px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; font-size: 16px; font-weight: 900; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #0f1115; }
+    .section-desc { color: var(--muted); margin: 0 0 24px; font-size: 15px; max-width: 720px; }
+
+    /* 卡片 */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .card h3 .tag { font-size: 11px; font-weight: 800; color: var(--accent); border: 1px solid rgba(74, 222, 128, .4); padding: 2px 8px; border-radius: 99px; margin-left: 8px; vertical-align: 2px; }
+    .card p { margin: 0 0 12px; color: var(--muted); font-size: 14.5px; }
+    .card p:last-child { margin-bottom: 0; }
+    .card ul, .card ol { margin: 0 0 12px; padding-left: 22px; color: var(--muted); font-size: 14.5px; }
+    .card li { margin-bottom: 6px; }
+    .card li b { color: var(--text); }
+
+    /* 程式碼區塊 */
+    .code-wrap { position: relative; margin: 14px 0; }
+    .code-wrap pre { margin: 0; border-radius: 10px; overflow: hidden; background: var(--code-bg) !important; border: 1px solid var(--line); }
+    .code-wrap pre code { font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace; font-size: 13.5px; line-height: 1.7; padding: 18px 20px; display: block; overflow-x: auto; }
+    .code-label { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--muted); padding: 8px 14px; background: #131720; border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; }
+    .copy-btn { background: transparent; border: 1px solid var(--line); color: var(--muted); font-size: 11px; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: .2s; }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .code-output { background: #0a0e14; border: 1px solid var(--line); border-radius: 0 0 10px 10px; padding: 14px 18px; font-family: "Cascadia Code", Consolas, monospace; font-size: 13px; color: #a5f3fc; white-space: pre; overflow-x: auto; margin: 0; }
+    .code-output .dim { color: #64748b; }
+
+    /* 提示框 */
+    .note { display: flex; gap: 12px; padding: 14px 18px; border-radius: 10px; margin: 14px 0; font-size: 14px; border: 1px solid; }
+    .note .icon { font-size: 18px; flex-shrink: 0; }
+    .note.info { background: rgba(56, 189, 248, .08); border-color: rgba(56, 189, 248, .3); color: #bae6fd; }
+    .note.warn { background: rgba(251, 191, 36, .08); border-color: rgba(251, 191, 36, .3); color: #fde68a; }
+    .note.danger { background: rgba(244, 114, 182, .08); border-color: rgba(244, 114, 182, .3); color: #fbcfe8; }
+    .note.success { background: rgba(74, 222, 128, .08); border-color: rgba(74, 222, 128, .3); color: #bbf7d0; }
+
+    /* 表格 */
+    .table-wrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: #131720; color: var(--text); text-align: left; padding: 11px 16px; font-size: 13px; letter-spacing: .04em; white-space: nowrap; }
+    td { padding: 10px 16px; border-top: 1px solid var(--line); color: var(--muted); }
+    td code, th code { background: rgba(74, 222, 128, .1); color: var(--accent); padding: 1px 6px; border-radius: 5px; font-size: 12.5px; font-family: "Cascadia Code", Consolas, monospace; }
+    tr:hover td { background: rgba(74, 222, 128, .03); }
+
+    /* 行內程式碼 */
+    p code, li code, .section-desc code { background: rgba(56, 189, 248, .12); color: #7dd3fc; padding: 2px 7px; border-radius: 5px; font-size: .88em; font-family: "Cascadia Code", Consolas, monospace; }
+
+    /* 比較表 */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+    .compare .col { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--card); }
+    .compare .col h4 { margin: 0 0 8px; font-size: 14px; }
+    .compare .col.bad h4 { color: var(--pink); }
+    .compare .col.good h4 { color: var(--accent); }
+    .compare .col p { margin: 0; font-size: 13.5px; color: var(--muted); }
+
+    /* 流程圖 */
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+    .flow .step { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; }
+    .flow .arrow { color: var(--accent); font-size: 16px; }
+
+    /* 章節分隔 */
+    .divider { height: 1px; background: var(--line); margin: 50px 0; }
+
+    /* 頁尾 */
+    footer { border-top: 1px solid var(--line); padding: 30px 24px; text-align: center; color: var(--muted); font-size: 13px; }
+    footer b { color: var(--accent); }
+
+    /* 響應式 */
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .sidebar ul { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+      .sidebar a { border-left: 0; border-bottom: 2px solid transparent; }
+      .sidebar a.active { border-bottom-color: var(--accent); }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .compare { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .topbar nav { display: none; }
+      .hero { padding-top: 44px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="logo"><span class="logo-mark">🍜</span>BeautifulSoup4 教學</div>
+      <nav>
+        <a href="#intro">簡介</a>
+        <a href="#basics">基礎</a>
+        <a href="#search">搜尋</a>
+        <a href="#traverse">遍歷</a>
+        <a href="#modify">修改</a>
+        <a href="#advanced">進階</a>
+        <a href="#practice">實戰</a>
+        <a href="#faq">常見問題</a>
+      </nav>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="badge">📖 完整教學｜<b>BeautifulSoup4</b> 從基礎到進階</div>
+    <h1>用 Python 輕鬆解析<br><span>HTML 與 XML</span></h1>
+    <p>BeautifulSoup4 是 Python 最受歡迎的 HTML 解析套件。本教學將帶你從安裝、基礎物件、搜尋與遍歷，一路學到修改文件與實戰爬蟲，並以專案中的 <code>apple.html</code> 作為實際範例。</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#intro">開始學習 ↓</a>
+      <a class="btn btn-ghost" href="#practice">直接看實戰範例</a>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b>9</b><span>教學章節</span></div>
+    <div class="stat"><b>30+</b><span>程式範例</span></div>
+    <div class="stat"><b>4</b><span>實戰練習</span></div>
+    <div class="stat"><b>100%</b><span>繁體中文</span></div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="group-label">開始</div>
+      <ul>
+        <li><a href="#intro">1. 什麼是 BeautifulSoup4</a></li>
+      </ul>
+      <div class="group-label">基礎篇</div>
+      <ul>
+        <li><a href="#basics">2. 基礎物件與解析器</a></li>
+        <li><a href="#search">3. 搜尋與選擇器</a></li>
+        <li><a href="#traverse">4. 遍歷文件樹</a></li>
+      </ul>
+      <div class="group-label">進階篇</div>
+      <ul>
+        <li><a href="#modify">5. 修改文件</a></li>
+        <li><a href="#advanced">6. 進階技巧</a></li>
+      </ul>
+      <div class="group-label">實戰篇</div>
+      <ul>
+        <li><a href="#practice">7. 實戰：爬取商品頁</a></li>
+      </ul>
+      <div class="group-label">附錄</div>
+      <ul>
+        <li><a href="#faq">8. 常見問題</a></li>
+        <li><a href="#summary">9. 總結與下一步</a></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <!-- ===== 第 1 章：簡介 ===== -->
+      <section id="intro">
+        <h2 class="section-title"><span class="num">1</span>什麼是 BeautifulSoup4？</h2>
+        <p class="section-desc">BeautifulSoup4（簡稱 bs4）是 Python 生態系中最受歡迎的 HTML / XML 解析套件。它能將雜亂的網頁原始碼轉換成易於操作的「文件樹」，讓你用直覺的方式搜尋、讀取與修改網頁內容。</p>
+
+        <div class="card">
+          <h3>為什麼需要它？<span class="tag">動機</span></h3>
+          <p>當你使用 <code>requests</code> 或 <code>urllib</code> 抓取網頁後，得到的只是一大串 HTML 字串。要從中取出商品名稱、價格、連結等資料，若用正規表達式（regex）硬拆，程式會又長又脆弱。BeautifulSoup 提供高階 API，讓「找標籤、取屬性、抓文字」變得像寫英文一樣簡單。</p>
+          <div class="flow">
+            <span class="step">requests 抓取 HTML</span><span class="arrow">→</span>
+            <span class="step">BeautifulSoup 解析</span><span class="arrow">→</span>
+            <span class="step">搜尋 / 遍歷</span><span class="arrow">→</span>
+            <span class="step">取出資料</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>安裝方式<span class="tag">開始</span></h3>
+          <p>使用 pip 安裝即可，套件名稱是 <code>beautifulsoup4</code>（import 時用 <code>bs4</code>）。</p>
+          <div class="code-wrap">
+            <div class="code-label">終端機</div>
+            <pre><code class="language-bash">pip install beautifulsoup4</code></pre>
+          </div>
+          <p>若你的專案使用 <code>pyproject.toml</code>（如本專案），可加入依賴後執行 <code>pip install -e .</code>：</p>
+          <div class="code-wrap">
+            <div class="code-label">pyproject.toml</div>
+            <pre><code class="language-toml">[project]
+dependencies = [
+    "beautifulsoup4>=4.12",
+]</code></pre>
+          </div>
+          <div class="note info"><span class="icon">💡</span><div>建議同時安裝 <code>lxml</code> 或 <code>html5lib</code> 作為解析器，速度與容錯能力更佳：<code>pip install lxml</code></div></div>
+        </div>
+
+        <div class="card">
+          <h3>快速上手範例<span class="tag">Hello World</span></h3>
+          <p>以下是最基本的用法：解析一段 HTML 並取出標題文字。</p>
+          <div class="code-wrap">
+            <div class="code-label">Python</div>
+            <pre><code class="language-python">from bs4 import BeautifulSoup
+
+html = "<h1>Hello, BeautifulSoup!</h1>"
+soup = BeautifulSoup(html, "html.parser")
+
+print(soup.h1)          # <h1>Hello, BeautifulSoup!</h1>
+print(soup.h1.text)     # Hello, BeautifulSoup!
+print(soup.h1.string)   # Hello, BeautifulSoup!</code></pre>
+          </div>
+          <pre class="code-output">Hello, BeautifulSoup!
+Hello, BeautifulSoup!</pre>
+        </div>
+
+        <div class="note success"><span class="icon">✅</span><div>本教學所有範例皆可直接複製執行。後續章節會以專案中的 <code>apple.html</code> 作為實戰素材。</div></div>
+      </section>
+
+      <!-- ===== 第 2 章：基礎物件 ===== -->
+      <section id="basics">
+        <h2 class="section-title"><span class="num">2</span>基礎物件與解析器</h2>
+        <p class="section-desc">BeautifulSoup 將 HTML 文件轉換成四種核心物件：<code>Tag</code>、<code>NavigableString</code>、<code>BeautifulSoup</code> 與 <code>Comment</code>。理解它們是掌握 bs4 的第一步。</p>
+
+        <div class="card">
+          <h3>四種核心物件<span class="tag">核心</span></h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>物件</th><th>說明</th><th>範例</th></tr></thead>
+              <tbody>
+                <tr><td><code>BeautifulSoup</code></td><td>整個文件的代表，也是解析的入口</td><td><code>soup</code></td></tr>
+                <tr><td><code>Tag</code></td><td>一個 HTML 標籤，可存取屬性與子節點</td><td><code>soup.h1</code></td></tr>
+                <tr><td><code>NavigableString</code></td><td>標籤內的文字內容</td><td><code>soup.h1.string</code></td></tr>
+                <tr><td><code>Comment</code></td><td>HTML 註解，是特殊的 NavigableString</td><td><code><!-- 註解 --></code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>解析器比較<span class="tag">選擇</span></h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>解析器</th><th>速度</th><th>容錯</th><th>需安裝</th><th>建議</th></tr></thead>
+              <tbody>
+                <tr><td><code>html.parser</code></td><td>中等</td><td>普通</td><td>內建</td><td>簡單頁面</td></tr>
+                <tr><td><code>lxml</code></td><td>快</td><td>佳</td><td>需安裝</td><td>一般爬蟲（推薦）</td></tr>
+                <tr><td><code>html5lib</code></td><td>慢</td><td>最佳</td><td>需安裝</td><td>極度不規範的頁面</td></tr>
+                <tr><td><code>xml</code></td><td>快</td><td>—</td><td>內建</td><td>解析 XML</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="note warn"><span class="icon">⚠️</span><div>若未指定解析器，BeautifulSoup 會自動選擇可用的最佳解析器，但建議明確指定以避免警告訊息。</div></div>
+        </div>
+
+        <div class="card">
+          <h3>Tag 的屬性操作<span class="tag">重點</span></h3>
+          <p>Tag 物件可以像字典一樣存取屬性，也能用 <code>get()</code> 安全取值。</p>
+          <div class="code-wrap">
+            <div class="code-label">Python</div>
+            <pre><code class="language-python">from bs4 import BeautifulSoup
+
+html = '<a href="https://example.com" class="link">範例連結</a>'
+soup = BeautifulSoup(html, "html.parser")
+a = soup.a
+
+print(a["href"])        # https://example.com
+print(a.get("class"))   # ['link']
+print(a.get("target"))  # None（不存在時回傳 None）
+print(a.attrs)          # {'href': 'https://example.com', 'class': ['link']}</code></pre>
+          </div>
+          <pre class="code-output">https://example.com
+['link']
+None
+{'href': 'https://example.com', 'class': ['link']}</pre>
+          <div class="note info"><span class="icon">💡</span><div><code>class</code> 屬性會以「列表」回傳，因為 HTML 允許一個元素有多個 class（如 <code>class="a b"</code>）。</div></div>
+        </div>
+
+        <div class="card">
+          <h3>讀取本專案的 apple.html<span class="tag">實作</span></h3>
+          <p>本專案根目錄有 <code>apple.html</code>，我們用它來練習。先讀取檔案並建立 soup 物件。</p>
+          <div class="code-wrap">
+            <div class="code-label">Python</div>
+            <pre><code class="language-python">from bs4 import BeautifulSoup
+
+with open("apple.html", encoding="utf-8") as f:
+    soup = BeautifulSoup(f, "html.parser")
+
+print(soup.title)            # <title>APPLE / select your next</title>
+print(soup.title.string)     # APPLE / select your next
+print(soup.h1.string)        # 選一台，開始下一幕。
+print(len(soup.find_all("article")))  # 18 個商品</code></pre>
+          </div>
+          <pre class="code-output">APPLE / select your next
+選一台，開始下一幕。
+18</pre>
+          <div class="note success"><span class="icon">✅</span><div>成功讀取！後續章節將深入探索這個頁面的結構。</div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <p>BeautifulSoup4 教學頁面｜以 <b>apple.html</b> 為實戰範例</p>
+    <p style="margin-top:6px; font-size:12px;">本頁面僅供教學使用，所有商品資訊皆為範例資料。</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    // 側邊欄滾動監控
+    const sections = document.querySelectorAll('section[id]');
+    const links = document.querySelectorAll('.sidebar a');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id));
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(section => observer.observe(section));
+
+    // 程式碼高亮
+    document.querySelectorAll('pre code').forEach(block => {
+      hljs.highlightElement(block);
+    });
+
+    // 複製按鈕
+    document.querySelectorAll('.code-wrap').forEach(wrap => {
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = '複製';
+      btn.addEventListener('click', () => {
+        const code = wrap.querySelector('code').innerText;
+        navigator.clipboard.writeText(code).then(() => {
+          btn.textContent = '已複製 ✓';
+          setTimeout(() => btn.textContent = '複製', 1600);
+        });
+      });
+      const label = wrap.querySelector('.code-label');
+      if (label) label.appendChild(btn);
+    });
+  </script>
+</body>
+</html>
