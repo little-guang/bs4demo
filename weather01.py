@@ -1,12 +1,14 @@
 import requests
 import time
 import csv
-from bs4 import BeautifulSoup
+import re
+from urllib.parse import urljoin
 from pathlib import Path
 from datetime import datetime
 
 URL = "https://www.cwa.gov.tw/V8/C/W/County/County.html?CID=66"
-TAICHUNG_GROUP_ID = "C66"
+DATA_URL = urljoin(URL, "/Data/js/TableData_36hr_County_C.js?")
+TAICHUNG_COUNTY_ID = "66"
 CSV_FILE = Path(__file__).resolve().parent / "weather01.csv"
 STOP_DATETIME = datetime(2026, 8, 21, 16, 0)
 FETCH_INTERVAL_SECONDS = 30 * 60
@@ -21,33 +23,48 @@ HEADERS = {
 
 
 def fetch_page():
-    """抓取頁面並擷取臺中市地圖區塊，最多等待 10 秒"""
+    """抓取臺中市未來 36 小時的溫度資料，最多等待 10 秒"""
     response = requests.get(
-        URL,
+        DATA_URL,
         headers=HEADERS,
         timeout=10
     )
     response.raise_for_status()
     response.encoding = "utf-8"
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    taichung_group = soup.find("g", id=TAICHUNG_GROUP_ID)
-    if taichung_group is None:
-        raise ValueError(f"找不到臺中市資料區塊: {TAICHUNG_GROUP_ID}")
+    county_match = re.search(
+        rf"'{TAICHUNG_COUNTY_ID}'\s*:\s*\[(.*?)]\s*,\s*'",
+        response.text,
+        re.S,
+    )
+    if county_match is None:
+        raise ValueError(f"找不到臺中市溫度資料: {TAICHUNG_COUNTY_ID}")
 
-    return str(taichung_group)
+    records = re.findall(
+        r"'TimeRange'\s*:\s*'([^']+)'.*?"
+        r"'Temp'\s*:\s*\{'C'\s*:\s*\{'L'\s*:\s*'([^']+)'\s*,\s*"
+        r"'H'\s*:\s*'([^']+)'\s*\}.*?"
+        r"'PoP'\s*:\s*'([^']+)'",
+        county_match.group(1),
+        re.S,
+    )
+    if not records:
+        raise ValueError("找不到臺中市溫度欄位")
+
+    return records
 
 
-def save_to_csv(page_text):
-    """將頁面內容存成 weather01.csv"""
+def save_to_csv(records):
+    """將臺中市溫度資料存成 weather01.csv"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     should_write_header = not CSV_FILE.exists() or CSV_FILE.stat().st_size == 0
 
     with open(CSV_FILE, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         if should_write_header:
-            writer.writerow(["抓取時間", "頁面內容"])
-        writer.writerow([now, page_text])
+            writer.writerow(["抓取時間", "預報時段", "低溫(°C)", "高溫(°C)", "降雨機率(%)"])
+        for time_range, low, high, pop in records:
+            writer.writerow([now, time_range, low, high, pop])
 
     print(f"[{now}] 已存檔: {CSV_FILE}")
 
