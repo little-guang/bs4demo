@@ -1,10 +1,15 @@
 import requests
 import time
 import csv
+from bs4 import BeautifulSoup
+from pathlib import Path
 from datetime import datetime
 
 URL = "https://www.cwa.gov.tw/V8/C/W/County/County.html?CID=66"
-CSV_FILE = "weather01.csv"
+TAICHUNG_GROUP_ID = "C66"
+CSV_FILE = Path(__file__).resolve().parent / "weather01.csv"
+STOP_DATETIME = datetime(2026, 8, 21, 16, 0)
+FETCH_INTERVAL_SECONDS = 30 * 60
 
 HEADERS = {
     "User-Agent": (
@@ -16,7 +21,7 @@ HEADERS = {
 
 
 def fetch_page():
-    """抓取頁面內容，最多等待 10 秒"""
+    """抓取頁面並擷取臺中市地圖區塊，最多等待 10 秒"""
     response = requests.get(
         URL,
         headers=HEADERS,
@@ -24,16 +29,24 @@ def fetch_page():
     )
     response.raise_for_status()
     response.encoding = "utf-8"
-    return response.text
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    taichung_group = soup.find("g", id=TAICHUNG_GROUP_ID)
+    if taichung_group is None:
+        raise ValueError(f"找不到臺中市資料區塊: {TAICHUNG_GROUP_ID}")
+
+    return str(taichung_group)
 
 
 def save_to_csv(page_text):
     """將頁面內容存成 weather01.csv"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    should_write_header = not CSV_FILE.exists() or CSV_FILE.stat().st_size == 0
 
-    with open(CSV_FILE, "w", newline="", encoding="utf-8-sig") as f:
+    with open(CSV_FILE, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
-        writer.writerow(["抓取時間", "頁面內容"])
+        if should_write_header:
+            writer.writerow(["抓取時間", "頁面內容"])
         writer.writerow([now, page_text])
 
     print(f"[{now}] 已存檔: {CSV_FILE}")
@@ -41,6 +54,10 @@ def save_to_csv(page_text):
 
 def main():
     while True:
+        if datetime.now() >= STOP_DATETIME:
+            print("已到 2026-08-21 16:00，停止抓取。")
+            break
+
         try:
             print("開始抓取 CWA 網頁...")
 
@@ -57,7 +74,7 @@ def main():
             print(f"其他錯誤：{e}")
 
         print("等待 30 分鐘後再次抓取...")
-        time.sleep(30)
+        time.sleep(FETCH_INTERVAL_SECONDS)
 
 
 if __name__ == "__main__":
